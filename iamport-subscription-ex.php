@@ -117,6 +117,10 @@ class WC_Gateway_Iamport_Subscription_Ex extends Base_Gateway_Iamport {
 
 		$this->_iamport_post_meta($order_id, '_customer_uid_reserved', $customer_uid); //post meta에 저장(예비용 customer_uid. 아직 빌링키까지 등록안됐으므로)
 
+        //[2019-12-02] 빌링키 발급 후 SignupFee 결제해야하는데, 웹훅이 먼저 도달하는 경우(통상적으로 wc-api=WC_Gateway_Iamport_Vbank 를 지정하므로 this.check_payment_response() 를 타지 못하고 IamportPlugin.check_payment_response 를 타서 결제완료처리만 되어버리는 경우가 생김)
+        // 정상적인 Webhook 주소를 강제로 지정하여 this.check_payment_response() 를 타도록 수정
+        $iamport_info['notice_url']= add_query_arg( array('wc-api'=>get_class( $this )), $order->get_checkout_payment_url());
+
 		return $iamport_info;
 	}
 
@@ -163,6 +167,8 @@ class WC_Gateway_Iamport_Subscription_Ex extends Base_Gateway_Iamport {
 			$iamport = new WooIamport($creds['imp_rest_key'], $creds['imp_rest_secret']);
 			$result = $iamport->findByImpUID($imp_uid);
 
+			$shouldRetry = true;
+
 			if ( $result->success ) {
 				$payment_data = $result->data;
 
@@ -189,9 +195,13 @@ class WC_Gateway_Iamport_Subscription_Ex extends Base_Gateway_Iamport {
 						$response = $this->doFakePayment( $payment_data, $order->get_total() );
 					} else {
 						$response = $this->doPayment( $creds, $order, $order->get_total(), $customer_uid );
+						if ($response === true) { //signup fee == 0 and free trial 인 경우 true가 반환됨
+						    $response = $payment_data;
+                        }
 					}
 
-					if ( is_wp_error( $response ) || !($response instanceof WooIamportPayment) ) {
+					//$response 는 (1) WP_Error (2) WooIamportPayment 둘 중 하나여야 한다.(직전 라인에서 true는 WooIamportPayment로 대체되었음)
+					if ( is_wp_error($response) ) {
 						$old_status = $order->get_status();
 
 						$order->add_order_note( $response->get_error_message() );
@@ -201,6 +211,7 @@ class WC_Gateway_Iamport_Subscription_Ex extends Base_Gateway_Iamport {
 						do_action('iamport_order_status_changed', $old_status, $order->get_status(), $order);
 					} else {
 						// 2. 발급된 빌링키로 SIGNUP-FEE 결제성공
+                        $shouldRetry = false;
 						$signup_imp_uid = $response->imp_uid;
 
 						$this->_iamport_post_meta($order_id, '_iamport_provider', $response->pg_provider);
@@ -222,7 +233,11 @@ class WC_Gateway_Iamport_Subscription_Ex extends Base_Gateway_Iamport {
 								//fire hook
 								do_action('iamport_order_status_changed', $synced_row->post_status, $order->get_status(), $order);
 
-								$note = sprintf( __( '정기결제 최초 과금(signup fee)에 성공하였습니다. (imp_uid : %s)', 'iamport-for-woocommerce' ) , $signup_imp_uid );
+								if ($order->get_total() == 0) {
+                                    $note = sprintf( __( '정기결제 결제수단 등록에 성공하였습니다. (imp_uid : %s)', 'iamport-for-woocommerce' ) , $signup_imp_uid );
+                                } else {
+                                    $note = sprintf( __( '정기결제 최초 과금(signup fee)에 성공하였습니다. (imp_uid : %s)', 'iamport-for-woocommerce' ) , $signup_imp_uid );
+                                }
 								$order->add_order_note( $note );
 								wc_add_notice($note);
 
@@ -332,10 +347,18 @@ class WC_Gateway_Iamport_Subscription_Ex extends Base_Gateway_Iamport {
 				$default_redirect_url = '/';
 			}
 
-			$called_from_iamport ? exit('IamportForWoocommerce 2.1.2') : wp_redirect( $default_redirect_url );
+			if ($called_from_iamport) {
+                exit('IamportForWoocommerce 2.1.3');
+            } else {
+			    if ($shouldRetry) {
+			        $default_redirect_url = add_query_arg(array('pay_for_order'=>'true'), $default_redirect_url);
+                }
+
+                wp_redirect( $default_redirect_url );
+            }
 		} else {
 			//just test(아임포트가 지원하는대로 호출되지 않음)
-			exit( 'IamportForWoocommerce 2.1.2' );
+			exit( 'IamportForWoocommerce 2.1.3' );
 		}
 	}
 
