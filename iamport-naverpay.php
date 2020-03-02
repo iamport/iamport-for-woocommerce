@@ -1345,7 +1345,7 @@ class IamportNaverPayButton {
 			}
 		}
 
-		wp_register_script( 'iamport_naverpay_for_woocommerce', plugins_url( '/assets/js/iamport.woocommerce.naverpay.js',plugin_basename(__FILE__) ), array('jquery', 'woocommerce_iamport_script', 'naverpay_script'), '20181011');
+		wp_register_script( 'iamport_naverpay_for_woocommerce', plugins_url( '/assets/js/iamport.woocommerce.naverpay.js',plugin_basename(__FILE__) ), array('jquery', 'woocommerce_iamport_script', 'naverpay_script'), '20200216');
 		wp_localize_script( 'iamport_naverpay_for_woocommerce', 'iamport_naverpay', array(
 			'ajax_info_url' => admin_url( 'admin-ajax.php' ),
 			'user_code' => $this->gateway->get_user_code(),
@@ -1498,14 +1498,14 @@ class IamportNaverPayButton {
             }
 		}
 
-	  //유입경로 관련
-	  $naverInterface = array(
-	  	"cpaInflowCode" => $_COOKIE["CPAValidator"],
-	  	"naverInflowCode" => $_COOKIE["NA_CO"],
-	  	"saClickId" => $_COOKIE["NVADID"],
-	  );
+        //유입경로 관련
+        $naverInterface = array(
+            "cpaInflowCode" => $_COOKIE["CPAValidator"],
+            "naverInflowCode" => $_COOKIE["NA_CO"],
+            "saClickId" => $_COOKIE["NVADID"],
+        );
 
-		//WoocommerceMembership 지원체크
+        //WoocommerceMembership 지원체크
         if (is_user_logged_in() && IamportHelper::supportMembershipPlugin()) {
             $loginId = get_current_user_id();
             if (wc_memberships_is_user_active_member($loginId)) { //membership 에 속한 active 유저인지 체크
@@ -1516,15 +1516,16 @@ class IamportNaverPayButton {
         //weight base shipping 때문에 추가. 그 외에도 범용적으로 쓸 수 있을 듯. order_key
         $naverInterface['merchantCustomCode2'] = $new_order->get_order_key();
 
-	  return array(
-	  	'pg_id'  => $this->gateway->get_attribute("pg_id"),
-	  	'amount' => $amount,
-	  	'name' => $this->get_order_name($new_order),
-	  	'merchant_uid' => $new_order->get_order_key(),
-	  	'naverProducts' => $naverProducts,
-	  	'naverInterface' => $naverInterface,
-	  	'naverCultureBenefit' => $isCultureBenefitOrder,
-		);
+        return array(
+            'pg_id' => $this->gateway->get_attribute("pg_id"),
+            'amount' => $amount,
+            'name' => $this->get_order_name($new_order),
+            'merchant_uid' => $new_order->get_order_key(),
+            'naverProducts' => $naverProducts,
+            'naverInterface' => $naverInterface,
+            'naverCultureBenefit' => $isCultureBenefitOrder,
+            'notice_url' => add_query_arg( array('wc-api'=>WC_Gateway_Iamport_NaverPay::class), $new_order->get_checkout_payment_url()), //notice_url 자동 설정
+        );
 	}
 
 	private function response_zzim($products) {
@@ -1870,20 +1871,26 @@ class IamportNaverPayButton {
 	  	if ( !empty($p["variation_id"]) ) { //variable product
 	  		$var_product = new WC_Product_Variation($p["variation_id"]);
 
-	  		$variations = array( "variation"=>array() );
+	  		$args = array( "variation"=>array() );
 	  		if ( !empty($p["variations"]) ) {
 					$attributes = $p["variations"];
 
 					foreach ($attributes as $k=>$v) {
 						$attribute_name = str_replace("attribute_", "", $k);
 
-						$variations["variation"][ $attribute_name ] = $v;
+						$args["variation"][ $attribute_name ] = $v;
 					}
 				}
 
-	  		$new_order->add_product( $var_product, $p["quantity"], $variations);
+	  		$item_id = $new_order->add_product( $var_product, $p["quantity"], $args);
+
+            //YITH product meta 연동을 위해 호출
+            self::bind_yith_product_add_on($item_id, $p["product_id"], $p["variation_id"], $p["quantity"]);
 	  	} else { //simple product
-	  		$new_order->add_product( wc_get_product( $p["product_id"] ), $p["quantity"] );
+	  		$item_id = $new_order->add_product( wc_get_product( $p["product_id"] ), $p["quantity"] );
+
+            //YITH product meta 연동을 위해 호출
+            self::bind_yith_product_add_on($item_id, $p["product_id"], 0, $p["quantity"]);
 	  	}
 	  }
 
@@ -1891,6 +1898,18 @@ class IamportNaverPayButton {
 
 	  return $new_order;
 	}
+
+	private static function bind_yith_product_add_on($item_id, $product_id, $variation_id, $quantity)
+    {
+        $item = new WC_Order_Item_Product($item_id);
+        $cart_item_meta = (array) apply_filters( 'woocommerce_add_cart_item_data', array(), $product_id, $variation_id, $quantity );
+        foreach ($cart_item_meta as $metaKey=>$metaValue) {
+            $item->add_meta_data($metaKey, $metaValue, true);
+        }
+        $item->save();
+
+        do_action( 'woocommerce_new_order_item', $item->get_id(), $item, $item->get_order_id() ); //YITH DB저장을 위해 호출 : order->add_product() 를 사용하기 때문에 DataStore.create hook 호출 시 meta 데이터가 전달될 수 있는 기회를 놓침(YITH는 create hook 에서만 DB저장을 함)
+    }
 
 }
 
@@ -1910,8 +1929,8 @@ class IamportNaverPayAdmin {
 		add_action( 'woocommerce_after_order_itemmeta', array($this, 'order_item_meta_actions'), 10, 3 );
 		add_action( 'woocommerce_order_item_add_action_buttons', array($this, 'woocommerce_order_item_add_action_buttons') );
 
-        //meta box 기능버튼 추가
-        add_action( 'woocommerce_admin_order_items_after_refunds', array($this, 'woocommerce_admin_order_items_after_refunds') );
+        //meta box 기능버튼 추가 : TODO(가상계좌 환불 등)
+//        add_action( 'woocommerce_admin_order_items_after_refunds', array($this, 'woocommerce_admin_order_items_after_refunds') );
 
         //meta box 동작을 위한 스크립트 로드
         add_action( 'admin_enqueue_scripts', array($this, 'admin_enqueue_scripts') );

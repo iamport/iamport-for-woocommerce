@@ -225,8 +225,8 @@ class WC_Gateway_Iamport_Subscription_Ex extends Base_Gateway_Iamport {
 							$synced_row = $wpdb->get_row("SELECT * FROM {$wpdb->prefix}posts WHERE ID = {$order_id} FOR UPDATE");
 
 							if ( !$this->has_status($synced_row->post_status, array('processing', 'completed')) ) {
-								$order->payment_complete( $signup_imp_uid ); //imp_uid
-								$order->set_payment_method( $gateway );
+                                $order->set_payment_method( $gateway );
+                                $order->payment_complete( $signup_imp_uid ); //imp_uid
 
 								$wpdb->query("COMMIT");
 
@@ -348,7 +348,7 @@ class WC_Gateway_Iamport_Subscription_Ex extends Base_Gateway_Iamport {
 			}
 
 			if ($called_from_iamport) {
-                exit('IamportForWoocommerce 2.1.3');
+                exit('IamportForWoocommerce 2.1.10');
             } else {
 			    if ($shouldRetry) {
 			        $default_redirect_url = add_query_arg(array('pay_for_order'=>'true'), $default_redirect_url);
@@ -358,7 +358,7 @@ class WC_Gateway_Iamport_Subscription_Ex extends Base_Gateway_Iamport {
             }
 		} else {
 			//just test(아임포트가 지원하는대로 호출되지 않음)
-			exit( 'IamportForWoocommerce 2.1.3' );
+			exit( 'IamportForWoocommerce 2.1.10' );
 		}
 	}
 

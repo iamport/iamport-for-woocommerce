@@ -293,8 +293,8 @@ class WC_Gateway_Iamport_Subscription extends WC_Payment_Gateway {
 			}
 
 			$old_status = $order->get_status();
-			$order->payment_complete();
-			$order->set_payment_method( $this );
+            $order->set_payment_method( $this );
+            $order->payment_complete();
 
 			//fire hook
 			do_action('iamport_order_status_changed', $old_status, $order->get_status(), $order);
@@ -396,8 +396,8 @@ class WC_Gateway_Iamport_Subscription extends WC_Payment_Gateway {
 						}
 
 						$old_status = $order->get_status();
-						$order->payment_complete( $payment_data->imp_uid );
-						$order->set_payment_method( $this );
+                        $order->set_payment_method( $this );
+                        $order->payment_complete( $payment_data->imp_uid );
 
 						//fire hook
 						do_action('iamport_order_status_changed', $old_status, $order->get_status(), $order);
@@ -464,8 +464,8 @@ class WC_Gateway_Iamport_Subscription extends WC_Payment_Gateway {
 						$order->add_order_note( sprintf( __( '정기결제 회차 과금(%s차결제)에 성공하였습니다. (imp_uid : %s)', 'iamport-for-woocommerce' ) , $order->suspension_count, $payment_data->imp_uid ) );
 
 						$old_status = $order->get_status();
-						$order->payment_complete( $payment_data->imp_uid );
-						$order->set_payment_method( $this );
+                        $order->set_payment_method( $this );
+                        $order->payment_complete( $payment_data->imp_uid );
 
 						//fire hook
 						do_action('iamport_order_status_changed', $old_status, $order->get_status(), $order);

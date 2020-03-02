@@ -236,9 +236,12 @@ class WC_Gateway_Iamport_NaverPayExt extends Base_Gateway_Iamport {
     }
 
     $response["pg"] = "naverpay";
-    $response["naverV2"] = true;
     $response["naverProducts"] = $naverProducts;
     $response["unblock"] = true;
+
+    if ( !wp_is_mobile() ) {
+        $response["naverPopupMode"] = true;
+    }
 
     return $response;
   }

@@ -66,6 +66,12 @@ class WC_Gateway_Iamport_Phone extends Base_Gateway_Iamport {
 				'label' => __( '디지털 상품인 경우 체크해주세요', 'iamport-for-woocommerce' ),
 				'default' => 'no'
 			),
+        ), $this->form_fields, array(
+            '_pg_auto_title' => array(
+                'title' => __('(1) 휴대폰소액결제 시, 자동 적용될 PG설정값 세팅'),
+                'type' => 'title',
+                'description' => '아임포트 관리자페이지 내 복수의 PG설정이 되어있을 때, 구매상품 / 카테고리에 따라 자동으로 설정될 PG값을 지정합니다.',
+            ),
 			'pg_provider' => array(
 				'title' => __( 'PG사 설정', 'iamport-for-woocommerce' ),
 				'type' => 'select',
@@ -101,8 +107,24 @@ class WC_Gateway_Iamport_Phone extends Base_Gateway_Iamport {
 				'default' => 'none',
 				'description'		=> __( '위에서 설정한 [PG사 설정] 및 [PG상점아이디] 가 적용될 카테고리를 선택합니다. 선택한 카테고리 또는 위에서 선택한 상품에 해당되지 않는 경우 [PG사 설정] 및 [PG상점아이디] 는 적용되지 않습니다.' ),
 				'options' => $allCategories,
-			)
-		), $this->form_fields);
+			),
+            '_pg_manual_title' => array(
+                'title' => __('(2) 휴대폰소액결제 시, 적용될 PG설정값을 고객이 직접 지정'),
+                'type' => 'title',
+                'description' => '체크아웃(Checkout)페이지에서 구매자가 휴대폰소액결제 결제수단 선택 후 세부 결제수단을 한 번 더 선택할 수 있습니다. 아래 기능을 사용하면 위에 설정된 [휴대폰소액결제 시, 자동 적용될 PG설정값 세팅] 값은 모두 무시됩니다.',
+            ),
+            'use_manual_pg' => array(
+                'title' => __( 'PG설정 구매자 선택방식 사용', 'woocommerce' ),
+                'type' => 'checkbox',
+                'description' => __( '아임포트 계정에 설정된 여러 PG사 / MID를 사용자의 선택에 따라 적용하는 기능을 활성화합니다. 휴대폰소액결제 결제수단 선택 시, 세부 결제수단 선택창이 추가로 출력됩니다.', 'iamport-for-woocommerce' ),
+                'default' => 'no',
+            ),
+            'manual_pg_id' => array(
+                'title' => __( 'PG설정 구매자 선택', 'woocommerce' ),
+                'type' => 'textarea',
+                'description' => __( '"{PG사 코드}.{PG상점아이디} : 구매자에게 표시할 텍스트" 의 형식으로 여러 줄 입력가능합니다.', 'iamport-for-woocommerce' ),
+            ),
+		));
 	}
 
 	public function init_settings() {
@@ -144,7 +166,7 @@ class WC_Gateway_Iamport_Phone extends Base_Gateway_Iamport {
 				</tr>
 			</tbody>
 		</table>
-        <?php 
+        <?php
 		ob_end_flush();
 	}
 
@@ -152,25 +174,29 @@ class WC_Gateway_Iamport_Phone extends Base_Gateway_Iamport {
 		$iamport_info = parent::iamport_payment_info( $order_id );
 		$iamport_info['digital'] = filter_var($this->settings['digital_contents'], FILTER_VALIDATE_BOOLEAN);
 
-		if ( !empty($this->pg_provider) && $this->pg_provider != 'none' ) {
-			$iamport_info['pg'] = $this->pg_provider;
-			
-			if ( !empty($this->pg_id) ) {
-				$iamport_info['pg'] = sprintf("%s.%s", $this->pg_provider, $this->pg_id);
-			}
+		$useManualPg = filter_var($this->settings['use_manual_pg'], FILTER_VALIDATE_BOOLEAN);
 
-			//조건에 해당되지 않으면 pg 파라메터 unset
-			$allAllowedInProduct  = !empty($this->settings['pg_products'])   && ( $this->settings['pg_products']   === "all" || (is_array($this->settings['pg_products'])   && in_array("all", $this->settings['pg_products'])) );
-			$allAllowedInCategory = !empty($this->settings['pg_categories']) && ( $this->settings['pg_categories'] === "all" || (is_array($this->settings['pg_categories']) && in_array("all", $this->settings['pg_categories'])) );
+        if (!$useManualPg) { //Manual 모드이면 굳이 루프돌며 찾지 않음
+            if (!empty($this->pg_provider) && $this->pg_provider != 'none') {
+                $iamport_info['pg'] = $this->pg_provider;
 
-			if ( !($allAllowedInProduct || $allAllowedInCategory) ) {
-				//타겟이 특정되어있을 때에만 검사한다.
-				$productList  = empty($this->settings['pg_products'])   || !is_array($this->settings['pg_products'])   ? array() : $this->settings['pg_products'];
-				$categoryList = empty($this->settings['pg_categories']) || !is_array($this->settings['pg_categories']) ? array() : $this->settings['pg_categories'];
+                if (!empty($this->pg_id)) {
+                    $iamport_info['pg'] = sprintf("%s.%s", $this->pg_provider, $this->pg_id);
+                }
 
-				if ( IamportHelper::has_excluded_product($order_id, $productList, $categoryList) )	unset($iamport_info['pg']);
-			}
-		}
+                //조건에 해당되지 않으면 pg 파라메터 unset
+                $allAllowedInProduct = !empty($this->settings['pg_products']) && ($this->settings['pg_products'] === "all" || (is_array($this->settings['pg_products']) && in_array("all", $this->settings['pg_products'])));
+                $allAllowedInCategory = !empty($this->settings['pg_categories']) && ($this->settings['pg_categories'] === "all" || (is_array($this->settings['pg_categories']) && in_array("all", $this->settings['pg_categories'])));
+
+                if (!($allAllowedInProduct || $allAllowedInCategory)) {
+                    //타겟이 특정되어있을 때에만 검사한다.
+                    $productList = empty($this->settings['pg_products']) || !is_array($this->settings['pg_products']) ? array() : $this->settings['pg_products'];
+                    $categoryList = empty($this->settings['pg_categories']) || !is_array($this->settings['pg_categories']) ? array() : $this->settings['pg_categories'];
+
+                    if (IamportHelper::has_excluded_product($order_id, $productList, $categoryList)) unset($iamport_info['pg']);
+                }
+            }
+        }
 
 		return $iamport_info;
 	}
@@ -178,5 +204,15 @@ class WC_Gateway_Iamport_Phone extends Base_Gateway_Iamport {
 	private function legacy_danal_user() {
 		return isset($this->settings['danal_user']) && filter_var($this->settings['danal_user'], FILTER_VALIDATE_BOOLEAN);
 	}
+
+    public function payment_fields()
+    {
+        parent::payment_fields(); //description 출력
+
+        $useManualPg = filter_var($this->settings['use_manual_pg'], FILTER_VALIDATE_BOOLEAN);
+        if ($useManualPg) {
+            echo IamportHelper::htmlSecondaryPaymentMethod($this->settings['manual_pg_id']);
+        }
+    }
 
 }

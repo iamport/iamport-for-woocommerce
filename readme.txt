@@ -3,8 +3,8 @@ Contributors: iamport
 Donate link: http://www.iamport.kr
 Tags: 네이버페이, 카카오페이, 페이코, 이니시스, KCP, naverpay, naver, payco, kakao, kakaopay, kpay, inicis, 유플러스, lguplus, uplus, 나이스, 나이스페이, nice, nicepay, 제이티넷, 티페이, jtnet, tpay, 다날, danal, 모빌리언스, mobilians, 정기결제, subscription, 해외카드, visa, master, jcb, shopping, mall, iamport
 Requires at least: 3.5
-Tested up to: 5.0.1
-Stable tag: 2.1.2
+Tested up to: 5.3.2
+Stable tag: 2.1.10
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -59,6 +59,34 @@ https://www.facebook.com/iamportservice
 
 
 == Changelog ==
+= 2.1.10 =
+* 상품페이지 내에서 네이버페이 결제 시, YITH Product Add On 에 의해 추가되는 메타데이터 우커머스 주문내역에 남겨지도록 수정
+
+= 2.1.9 =
+* Eximbay 로 KRW 결제가 가능하도록 허용(Eximbay 에서 KRW결제가 가능해짐)
+
+= 2.1.8 =
+* Chrome 80 버전 업데이트를 대비한, 네이버페이(결제형) 레이어방식 적용해제(팝업방식)
+* 기타 마이너한 소스코드 정리
+
+= 2.1.7 =
+* 아임포트 각 결제수단 내, 구매자가 직접 PG사 설정을 선택할 수 있는 기능 제공(예시 : 신용카드 내 국내결제/해외결제 등 구매자가 직접 선택이 필요한 경우)
+
+= 2.1.6 =
+* 결제수단정보가 DB에 제대로 반영될 수 있도록 WC_Order::save()를 명시적으로 호출
+
+= 2.1.5 =
+* 아임포트를 통한 Paypal 결제 지원
+* 네이버페이(주문형) 결제정보 동기화를 위해 Webhook 주소 자동 지정(아임포트 관리자 페이지 Webhook 주소 설정할 필요없도록)
+
+= 2.1.4 =
+* 결제창방식 정기결제 시, Signup Fee == 0 && Free Trial일 때 정상건임에도 PHP오류로 실패처리되던 버그 수정
+* 결제창방식 정기결제 최초 등록 실패 시, 재시도할 수 있도록 리디렉션
+
+= 2.1.3 =
+* 결제창방식의 정기결제 건에 대해, Webhook 호출 시 WC_Gateway_Iamport_Subscription_Ex::check_payment_response() 를 탈 수 있도록 경로 수정
+* 우커머스 > 설정 > 아임포트 내 웹훅 URL 직접 설정하는 기능 삭제
+
 = 2.1.2 =
 * 아임포트 관련 Gateway로 처리된 주문이 아니면 고객환불요청에 대해 API 요청시도하지 않도록
 * get_terms() 의 응답은 항상 array가 아닐 수 있으므로 대응

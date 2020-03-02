@@ -12,6 +12,7 @@ jQuery(function($) {
 		'iamport_subscription_ex',
 		'iamport_naverpay_ext',
 		'iamport_smilepay',
+		'iamport_paypal',
 		'iamport_alipay'
 	];
 
@@ -129,6 +130,14 @@ jQuery(function($) {
 		}
 		*/
 
+		//secondary 결제수단 선택
+		var secondaryMethod = $form.find('input[name="payment_method"]:checked').closest('li').find('.iamport_payment_method_secondary'),
+			manualPg = null;
+
+		if (secondaryMethod.length > 0) { //찾은 경우
+			manualPg = secondaryMethod.val();
+		}
+
 		$form.addClass( 'processing' );
 		var form_data = $form.data();
 
@@ -178,13 +187,17 @@ jQuery(function($) {
 						    niceMobileV2 : true
 						};
 
-						if ( result.iamport.pg )		     			req_param.pg = result.iamport.pg;
+						if (manualPg) {
+							req_param.pg = manualPg;
+						} else if (result.iamport.pg) {
+							req_param.pg = result.iamport.pg;
+						}
+
 						if ( typeof result.iamport.tax_free == "number" )	req_param.tax_free = result.iamport.tax_free;
 						if ( result.iamport.language )	     	req_param.language = result.iamport.language;
 						if ( result.iamport.customer_uid )	 	req_param.customer_uid = result.iamport.customer_uid;
 						if ( result.iamport.kcpProducts )			req_param.kcpProducts = result.iamport.kcpProducts;
-						if ( gateway_name == "iamport_eximbay" && result.iamport.currency == "KRW" )	throw {reload: false, refresh: false, messages: "Eximbay는 KRW결제가 지원되지 않습니다. (Eximbay does not support KRW currency in payment)"};
-						if ( result.iamport.naverV2 )         req_param.naverV2 = true;
+						if ( result.iamport.naverPopupMode )         req_param.naverPopupMode = true;
 						if ( result.iamport.naverProducts )   req_param.naverProducts = result.iamport.naverProducts;
 						if ( result.iamport.notice_url )      req_param.notice_url = result.iamport.notice_url;
 						if ( result.iamport.period )          req_param.period = result.iamport.period;
@@ -232,7 +245,7 @@ jQuery(function($) {
 
 	$('form#order_review:not([name="checkout"])').on('submit', function(e) {
 		var $form = $(this),
-			gateway_name = $( '#order_review input[name=payment_method]:checked' ).val(),
+			gateway_name = $( 'input[name=payment_method]:checked' ).val(),
 			prefix = 'iamport_';
 
 		if ( !in_iamport_gateway(gateway_name) )	return true; //다른 결제수단이 submit될 수 있도록
@@ -253,6 +266,14 @@ jQuery(function($) {
 			pay_method = 'card'; //지원안되는 단말인데 결제시도하면 card로 시도
 		}
 		*/
+
+		//secondary 결제수단 선택
+		var secondaryMethod = $form.find('input[name="payment_method"]:checked').closest('li').find('.iamport_payment_method_secondary'),
+			manualPg = null;
+
+		if (secondaryMethod.length > 0) { //찾은 경우
+			manualPg = secondaryMethod.val();
+		}
 
 		$.ajax({
 			type: 	'GET',
@@ -295,13 +316,17 @@ jQuery(function($) {
 						    niceMobileV2 : true
 						};
 
-						if ( result.iamport.pg )			req_param.pg = result.iamport.pg;
+						if (manualPg) {
+							req_param.pg = manualPg;
+						} else if (result.iamport.pg) {
+							req_param.pg = result.iamport.pg;
+						}
+
 						if ( typeof result.iamport.tax_free == "number" )	req_param.tax_free = result.iamport.tax_free;
 						if ( result.iamport.language )		req_param.language = result.iamport.language;
 						if ( result.iamport.customer_uid )	req_param.customer_uid = result.iamport.customer_uid;
 						if ( result.iamport.kcpProducts )			req_param.kcpProducts = result.iamport.kcpProducts;
-						if ( gateway_name == "iamport_eximbay" && result.iamport.currency == "KRW" )	throw {reload: false, refresh: false, messages: "Eximbay는 KRW결제가 지원되지 않습니다. (Eximbay does not support KRW currency in payment)"};
-						if ( result.iamport.naverV2 )         req_param.naverV2 = true;
+						if ( result.iamport.naverPopupMode )         req_param.naverPopupMode = true;
 						if ( result.iamport.naverProducts )   req_param.naverProducts = result.iamport.naverProducts;
 						if ( result.iamport.notice_url )      req_param.notice_url = result.iamport.notice_url;
 						if ( result.iamport.period )          req_param.period = result.iamport.period;

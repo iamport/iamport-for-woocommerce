@@ -55,13 +55,13 @@ class IamportSettingTab
 				'default'	=> '',
 				'type'		=> 'number'
 			),
-			array(
-				'title'		=> __( '아임포트 웹훅(Notification) 통지 URL', 'iamport-for-woocommerce' ),
-				'desc'		=> sprintf( __( '가상계좌 입금통지, 거래정보 동기화 등을 위해 아임포트 웹훅을 통지받을 URL을 지정할 수 있습니다.<br>(예시 : %s)' ), home_url() . '?wc-api=WC_Gateway_Iamport_Vbank' ),
-				'id'		=> 'woocommerce_iamport_notice_url',
-				'default'	=> '',
-				'type'		=> 'url'
-			),
+//			array(
+//				'title'		=> __( '아임포트 웹훅(Notification) 통지 URL', 'iamport-for-woocommerce' ),
+//				'desc'		=> sprintf( __( '가상계좌 입금통지, 거래정보 동기화 등을 위해 아임포트 웹훅을 통지받을 URL을 지정할 수 있습니다.<br>(예시 : %s)' ), home_url() . '?wc-api=WC_Gateway_Iamport_Vbank' ),
+//				'id'		=> 'woocommerce_iamport_notice_url',
+//				'default'	=> '',
+//				'type'		=> 'url'
+//			),
             array(
                 'title'		=> __( '아임포트 결제주소 처리', 'iamport-for-woocommerce' ),
                 'desc'		=> __( '결제주소 내 줄바꿈(Carriage Return) 모두 제거', 'iamport-for-woocommerce' ),

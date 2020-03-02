@@ -43,7 +43,7 @@ class NaverProduct implements INode {
 		);
 
 		if ( count($this->optionItems) > 0 ) {
-			$attribute['optionSupport'] = true;
+			$attribute['optionSupport'] = "true";
 			$attribute['option'] = array();
 
 			foreach ($this->optionItems as $idx=>$optionItem) {
@@ -53,7 +53,7 @@ class NaverProduct implements INode {
 			foreach ($this->combinations as $idx=>$comb) {
 				$attribute['option']["combination" . $idx] = $comb->getAttribute();
 			}
-		}		
+		}
 
 		return $attribute;
 	}

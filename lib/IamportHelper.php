@@ -221,6 +221,34 @@ if (!class_exists('IamportHelper')) {
             return $gateway && strpos($gateway->id, "iamport_") === 0;
         }
 
+        public static function htmlSecondaryPaymentMethod($settingsText)
+        {
+            $manualPgOptions = explode("\n", $settingsText);
+            $pgOptions = array();
+
+            foreach($manualPgOptions as $line) {
+                $option = explode(':', $line, 2);
+                if (count($option) == 2) {
+                    $pgId = trim($option[0]);
+                    $label = trim($option[1]);
+                    $pgOptions[$pgId] = $label;
+                }
+            }
+
+            if (!empty($pgOptions)) {
+                ob_start(); ?>
+                <select class="iamport_payment_method_secondary">
+                    <? foreach($pgOptions as $key=>$label) : ?>
+                        <option value="<?=$key?>"><?=$label?></option>
+                    <? endforeach; ?>
+                </select>
+                <?php
+                return ob_get_clean();
+            }
+
+            return '';
+        }
+
     }
 
 }

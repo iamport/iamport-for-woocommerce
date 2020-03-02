@@ -3,7 +3,7 @@
  * Plugin Name: 우커머스용 아임포트 플러그인(국내 모든 PG를 한 번에)
  * Plugin URI: http://www.iamport.kr
  * Description: 우커머스용 한국PG 연동 플러그인 ( 신용카드 / 실시간계좌이체 / 가상계좌 / 휴대폰소액결제 - 에스크로포함 )
- * Version: 2.1.2
+ * Version: 2.1.10
  * Author: SIOT
  * Author URI: http://www.siot.do
  *
@@ -276,6 +276,7 @@ function ajax_iamport_payment_info() {
         $order_id = wc_get_order_id_by_order_key($order_key);
         $order = wc_get_order($order_id);
         $order->set_payment_method($gateway_name); //[2019-07-25]사용자가 선택한 결제수단으로 Gateway 정보를 먼저 바꿔준다.
+        $order->save();
 
         $gateway = wc_get_payment_gateway_by_order($order);
 
@@ -899,6 +900,7 @@ function woocommerce_gateway_iamport_init() {
 
 									$order->update_status('awaiting-vbank', __( '가상계좌 입금대기 중', 'iamport-for-woocommerce' ));
 									$order->set_payment_method( $gateway );
+									$order->save();
 
 									$wpdb->query("COMMIT");
 
@@ -1014,10 +1016,10 @@ function woocommerce_gateway_iamport_init() {
 					$default_redirect_url = '/';
 				}
 
-				$called_from_iamport ? exit( json_encode(array("version"=>"IamportForWoocommerce 2.1.2", "log"=>$loggers)) ) : wp_redirect( $default_redirect_url );
+				$called_from_iamport ? exit( json_encode(array("version"=>"IamportForWoocommerce 2.1.10", "log"=>$loggers)) ) : wp_redirect( $default_redirect_url );
 			} else {
                 //just test(아임포트가 지원하는대로 호출되지 않음)
-                exit( json_encode(array("version"=>"IamportForWoocommerce 2.1.2")) );
+                exit( json_encode(array("version"=>"IamportForWoocommerce 2.1.10")) );
 			}
 		}
 
@@ -1101,7 +1103,7 @@ function woocommerce_gateway_iamport_init() {
 		public function enqueue_iamport_script() {
 			wp_register_script( 'woocommerce_iamport_script', 'https://cdn.iamport.kr/js/iamport.payment-1.1.7.js', array('jquery'), '20190812' );
 			wp_register_script( 'iamport_jquery_url', plugins_url( '/assets/js/url.min.js',plugin_basename(__FILE__) ), array(), '20190918');
-			wp_register_script( 'iamport_script_for_woocommerce', plugins_url( '/assets/js/iamport.woocommerce.js',plugin_basename(__FILE__) ), array('jquery', 'iamport_jquery_url'), '20190918');
+			wp_register_script( 'iamport_script_for_woocommerce', plugins_url( '/assets/js/iamport.woocommerce.js',plugin_basename(__FILE__) ), array('jquery', 'iamport_jquery_url'), '20200207');
 			wp_register_script( 'samsung_runnable', 'https://d3sfvyfh4b9elq.cloudfront.net/pmt/web/device.json' );
 			wp_enqueue_script('woocommerce_iamport_script');
 			wp_enqueue_script('iamport_jquery_url');
@@ -1343,6 +1345,7 @@ function woocommerce_gateway_iamport_init() {
 	require_once('iamport-subscription-ex.php');// PG사 결제창을 통한 빌링키 발급 방식의 정기결제
 	require_once('iamport-smilepay.php');
 	require_once('iamport-alipay.php');
+	require_once('iamport-paypal.php');
 
 	require_once('lib/IamportHelper.php');
 
@@ -1373,7 +1376,8 @@ function woocommerce_add_gateway_iamport_gateway($methods) {
 		'WC_Gateway_Iamport_Kpay',
 		'WC_Gateway_Iamport_Subscription',// KEY-IN결제에 사용될 수 있음
 		'WC_Gateway_Iamport_Subscription_Ex',// PG사 결제창을 통한 빌링키 발급 방식의 정기결제
-		'WC_Gateway_Iamport_Foreign',
+        'WC_Gateway_Iamport_Paypal',
+        'WC_Gateway_Iamport_Foreign',
 		'WC_Gateway_Iamport_Alipay',
 		'WC_Gateway_Iamport_Eximbay',
 		'WC_Gateway_Iamport_NaverPayExt',

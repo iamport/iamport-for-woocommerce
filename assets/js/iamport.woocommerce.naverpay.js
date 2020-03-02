@@ -60,7 +60,7 @@ jQuery(function($) {
           }
 
           $.ajax({
-            type: 'GET',
+            type: 'POST',
             url: iamport_naverpay.ajax_info_url,
             data: getButtonFormData(form), //add-to-cart가 포함되어있으면 자동으로 장바구니에 추가됨(serialize 전에 명시적으로 add-to-cart제거하기)
             dataType: 'json',
@@ -81,7 +81,8 @@ jQuery(function($) {
                 merchant_uid: result.merchant_uid,
                 naverProducts: result.naverProducts,
                 naverInterface: result.naverInterface,
-                naverCultureBenefit: result.naverCultureBenefit
+                naverCultureBenefit: result.naverCultureBenefit,
+                notice_url: result.notice_url
               };
 
               if ( result.pg_id ) param.pg = "naverco." + result.pg_id;
@@ -186,7 +187,8 @@ jQuery(function($) {
                   merchant_uid: result.merchant_uid,
                   naverProducts: result.naverProducts,
                   naverInterface: result.naverInterface,
-                  naverCultureBenefit: result.naverCultureBenefit
+                  naverCultureBenefit: result.naverCultureBenefit,
+                  notice_url: result.notice_url
                 };
 
                 if ( result.pg_id ) param.pg = "naverco." + result.pg_id;
